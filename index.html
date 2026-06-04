@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Python 初學者錯誤診斷與適性練習</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Python list index MVP</p>
+          <h1>錯誤診斷與適性練習</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="ghost" id="demoBtn" type="button">展示模式</button>
+          <button class="ghost" id="adminBtn" type="button">管理</button>
+          <button class="ghost" id="viewRecordBtn" type="button">學習紀錄</button>
+          <button class="danger" id="resetBtn" type="button">清除紀錄</button>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="sidebar">
+          <div class="meter-block">
+            <span>掌握度</span>
+            <strong id="masteryText">0%</strong>
+            <div class="meter"><span id="masteryBar"></span></div>
+          </div>
+          <nav class="steps" aria-label="學習流程">
+            <button data-screen="home" type="button">首頁</button>
+            <button data-screen="diagnostic" type="button">初始診斷</button>
+            <button data-screen="topic" type="button">list 與索引</button>
+            <button data-screen="summary" type="button">學習摘要</button>
+          </nav>
+          <div class="model-panel">
+            <h2>目前模型</h2>
+            <dl>
+              <div><dt>錯誤風險</dt><dd id="riskText">低</dd></div>
+              <div><dt>提示依賴</dt><dd id="hintText">0</dd></div>
+              <div><dt>遷移能力</dt><dd id="transferText">尚未評估</dd></div>
+            </dl>
+          </div>
+        </aside>
+
+        <section class="workspace" id="app" aria-live="polite"></section>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="modal" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle">提醒</h2>
+        <p id="modalBody"></p>
+        <div class="modal-actions" id="modalActions"></div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
