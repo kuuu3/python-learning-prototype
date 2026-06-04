@@ -1297,6 +1297,7 @@ function getSummaryTopicId() {
 
 function renderAdmin() {
   const checks = buildAcceptanceChecks();
+  const scenarios = buildScenarioChecks();
   const passed = checks.filter((item) => item.status === "pass").length;
   const partial = checks.filter((item) => item.status === "partial").length;
   const topicCounts = Object.fromEntries(Object.keys(topics).map((topicId) => [topicId, questionBankByTopic[topicId]?.length || 0]));
@@ -1356,6 +1357,20 @@ function renderAdmin() {
               <span>${statusText(item.status)}</span>
               <div>
                 <strong>${item.title}</strong>
+                <p>${item.detail}</p>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+      <section class="question-box">
+        <h3>測試情境 T01-T10</h3>
+        <div class="acceptance-list">
+          ${scenarios.map((item) => `
+            <div class="acceptance-item ${item.status}">
+              <span>${statusText(item.status)}</span>
+              <div>
+                <strong>${item.id} ${item.title}</strong>
                 <p>${item.detail}</p>
               </div>
             </div>
@@ -2141,6 +2156,87 @@ function buildAcceptanceChecks() {
       title: "展示模式",
       detail: "可一鍵建立高信心答錯、提示修正、遷移通過的示範資料。",
       status: "pass"
+    }
+  ];
+}
+
+function buildScenarioChecks() {
+  const attempts = state.attempts || [];
+  const transitions = state.session.sessionTransitionLog || [];
+  const hasAllCorrectHighConfidence = attempts.length >= 4 && attempts.slice(-4).every((item) => item.isCorrect && item.confidence === "sure");
+  const hasCorrectLowConfidence = attempts.some((item) => item.isCorrect && item.confidence === "unsure");
+  const hasWrongHighConfidence = attempts.some((item) => !item.isCorrect && !item.isUnknown && item.confidence === "sure");
+  const hasUnknown = attempts.some((item) => item.isUnknown || item.errorType === "unknown");
+  const hasFastResponse = attempts.some((item) => item.fastResponseConfirmed) || (state.session.metrics.fastResponseCount || 0) > 0;
+  const hasTabAway = attempts.some((item) => (item.inactiveSeconds || 0) > 0) || (state.session.metrics.tabSwitchCount || 0) > 0;
+  const repeatedError = Object.values(
+    attempts.reduce((acc, item) => {
+      if (item.errorType && item.errorType !== "unknown") acc[item.errorType] = (acc[item.errorType] || 0) + 1;
+      return acc;
+    }, {})
+  ).some((count) => count >= 3);
+  const hasTransferFail = attempts.some((item) => getQuestionById(item.questionId)?.state === "TRANSFER" && !item.isCorrect);
+
+  return [
+    {
+      id: "T01",
+      title: "全部答對且信心高",
+      detail: hasAllCorrectHighConfidence ? "最近一組作答可呈現快速通過路徑。" : "可用主題練習連續答對並選「確定」測試。",
+      status: hasAllCorrectHighConfidence ? "pass" : "partial"
+    },
+    {
+      id: "T02",
+      title: "答對但信心低",
+      detail: hasCorrectLowConfidence ? "已有答對但不太確定的紀錄。" : "答對並選「不太確定」可測試補一題驗證路徑。",
+      status: hasCorrectLowConfidence ? "pass" : "partial"
+    },
+    {
+      id: "T03",
+      title: "答錯且信心高",
+      detail: hasWrongHighConfidence ? "已有高信心答錯紀錄，可展示錯誤概念修正。" : "可用展示模式或故意答錯並選「確定」。",
+      status: hasWrongHighConfidence ? "pass" : "partial"
+    },
+    {
+      id: "T04",
+      title: "選擇我不知道",
+      detail: hasUnknown ? "已有知識不足紀錄。" : "選「我不知道」可測試基礎教學路徑。",
+      status: hasUnknown ? "pass" : "partial"
+    },
+    {
+      id: "T05",
+      title: "過快作答提醒",
+      detail: hasFastResponse ? "已觸發過快作答提醒或確認。" : "2.5 秒內提交會觸發確認提醒。",
+      status: hasFastResponse ? "pass" : "partial"
+    },
+    {
+      id: "T06",
+      title: "分頁切換暫停有效時間",
+      detail: hasTabAway ? "已有分頁離開或 inactive time 紀錄。" : "切到其他分頁再回來作答，可測試暫停有效時間。",
+      status: hasTabAway ? "pass" : "partial"
+    },
+    {
+      id: "T07",
+      title: "同一錯誤連續多次",
+      detail: repeatedError ? "已有同一錯誤概念累積三次以上。" : "同一錯誤概念累積後，摘要會集中顯示補救建議。",
+      status: repeatedError ? "pass" : "partial"
+    },
+    {
+      id: "T08",
+      title: "localStorage JSON 損毀",
+      detail: "loadState() 已支援 JSON 解析失敗偵測，會顯示重設提示。",
+      status: "pass"
+    },
+    {
+      id: "T09",
+      title: "schemaVersion 不同",
+      detail: "loadState() 已檢查 schemaVersion 與 questionBankVersion，不相容時會提示重設。",
+      status: "pass"
+    },
+    {
+      id: "T10",
+      title: "遷移題失敗",
+      detail: hasTransferFail ? "已有遷移題失敗紀錄，可展示補強建議。" : "在遷移題答錯可測試推薦補強同概念。",
+      status: hasTransferFail ? "pass" : "partial"
     }
   ];
 }
