@@ -684,6 +684,15 @@ let questionStartedAt = Date.now();
 let questionTiming = createQuestionTiming();
 let latestFeedback = null;
 let storageIssue = null;
+const dirtyKeys = new Set();
+let storageFlushTimer = null;
+let storageStatus = {
+  lastFlushAt: null,
+  lastFlushMode: null,
+  lastFlushKeys: [],
+  pendingFlush: false,
+  flushCount: 0
+};
 
 const app = document.querySelector("#app");
 const modal = document.querySelector("#modal");
@@ -769,20 +778,52 @@ function loadState() {
   }
 }
 
-function saveState() {
+function markStateDirty(keys = Object.keys(KEYS)) {
+  keys.forEach((key) => dirtyKeys.add(key));
+}
+
+function saveState(options = {}) {
+  markStateDirty(options.keys);
+  flushStateToLocalStorage(options);
+}
+
+function flushStateToLocalStorage(options = {}) {
+  const { force = false } = options;
+  if (storageFlushTimer) {
+    clearTimeout(storageFlushTimer);
+    storageFlushTimer = null;
+  }
+  if (!force) {
+    storageStatus.pendingFlush = true;
+    storageFlushTimer = setTimeout(() => flushStateToLocalStorage({ force: true, mode: "debounced" }), 350);
+    return;
+  }
+  const keysToWrite = dirtyKeys.size ? Array.from(dirtyKeys) : Object.keys(KEYS);
   state.profile.lastActiveAt = new Date().toISOString();
-  localStorage.setItem(KEYS.profile, JSON.stringify(state.profile));
-  localStorage.setItem(KEYS.progress, JSON.stringify(state.progress));
-  localStorage.setItem(KEYS.attempts, JSON.stringify(state.attempts));
-  localStorage.setItem(KEYS.session, JSON.stringify(state.session));
-  localStorage.setItem(KEYS.summaries, JSON.stringify(state.summaries));
+  const writers = {
+    profile: () => localStorage.setItem(KEYS.profile, JSON.stringify(state.profile)),
+    progress: () => localStorage.setItem(KEYS.progress, JSON.stringify(state.progress)),
+    attempts: () => localStorage.setItem(KEYS.attempts, JSON.stringify(state.attempts)),
+    session: () => localStorage.setItem(KEYS.session, JSON.stringify(state.session)),
+    summaries: () => localStorage.setItem(KEYS.summaries, JSON.stringify(state.summaries))
+  };
+  keysToWrite.forEach((key) => writers[key]?.());
+  dirtyKeys.clear();
+  storageStatus = {
+    lastFlushAt: new Date().toISOString(),
+    lastFlushMode: options.mode || "force",
+    lastFlushKeys: keysToWrite,
+    pendingFlush: false,
+    flushCount: storageStatus.flushCount + 1
+  };
 }
 
 function resetAllLearningData(options = {}) {
   Object.values(KEYS).forEach((key) => localStorage.removeItem(key));
   localStorage.removeItem("pythonTutorState");
   state = createDefaultState();
-  saveState();
+  markStateDirty(Object.keys(KEYS));
+  flushStateToLocalStorage({ force: true, mode: "reset" });
   diagnosticIndex = 0;
   practiceIndex = 0;
   screen = "home";
@@ -792,7 +833,8 @@ function resetAllLearningData(options = {}) {
 function init() {
   if (!loadState()) {
     state = createDefaultState();
-    saveState();
+    markStateDirty(Object.keys(KEYS));
+    flushStateToLocalStorage({ force: true, mode: "init" });
   }
   bindGlobalEvents();
   render();
@@ -829,7 +871,10 @@ function bindGlobalEvents() {
       setScreen(target);
     });
   });
-  window.addEventListener("pagehide", saveState);
+  window.addEventListener("pagehide", () => {
+    markStateDirty(Object.keys(KEYS));
+    flushStateToLocalStorage({ force: true, mode: "pagehide" });
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       pauseQuestionTiming();
@@ -1306,6 +1351,7 @@ function renderAdmin() {
     key,
     exists: Boolean(localStorage.getItem(key))
   }));
+  const pendingDirtyKeys = Array.from(dirtyKeys);
   return `
     <article class="screen">
       <div>
@@ -1347,6 +1393,10 @@ function renderAdmin() {
               <strong>${item.exists ? "存在" : "缺少"}</strong>
             </div>
           `).join("")}
+        </div>
+        <div class="note-box storage-note">
+          <strong>儲存狀態</strong>
+          <p>Dirty keys：${pendingDirtyKeys.length ? pendingDirtyKeys.join(", ") : "無"}；pending flush：${storageStatus.pendingFlush ? "是" : "否"}；最後寫入：${storageStatus.lastFlushAt ? formatTime(storageStatus.lastFlushAt) : "尚無"}；模式：${storageStatus.lastFlushMode || "尚無"}；次數：${storageStatus.flushCount}</p>
         </div>
       </section>
       <section class="question-box">
@@ -2075,12 +2125,18 @@ function buildAcceptanceChecks() {
   const hasSummary = state.summaries.length > 0;
   const transitionCount = state.session.sessionTransitionLog.length;
   const hasCoreRepairContent = ["index_start_from_one", "len_is_last_index", "value_index_confusion"].every((key) => repairContentByError[key]);
+  const hasStorageStrategy = Boolean(storageStatus.lastFlushMode);
 
   return [
     {
       title: "localStorage 五個主要 key",
       detail: keysReady ? "profile、progress、attempts、session、summaries 都已建立。" : "尚未建立完整 key，可重新整理或開始一次練習。",
       status: keysReady ? "pass" : "partial"
+    },
+    {
+      title: "Dirty flags / debounce / force flush",
+      detail: hasStorageStrategy ? `目前儲存策略已啟用；最後寫入模式為 ${storageStatus.lastFlushMode}，最近寫入 keys：${storageStatus.lastFlushKeys.join(", ") || "無"}。` : "儲存策略已實作，需重新整理或操作後才會出現 flush 紀錄。",
+      status: hasStorageStrategy ? "pass" : "partial"
     },
     {
       title: "版本與題庫版本",

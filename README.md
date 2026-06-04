@@ -47,6 +47,7 @@
 | 作答時間 | 有效時間、原始時間、inactive time |
 | 過快提醒 | 低於 2.5 秒需確認後再提交 |
 | 分頁切換 | visibilitychange 暫停有效作答時間 |
+| localStorage 管理 | dirty flags、debounce flush、force flush、pagehide flush |
 | 自我說明 | 關鍵概念偵測與 selfAssessment |
 | 總複習 | 四主題混合抽題與跨主題摘要 |
 | 狀態轉移 | sessionTransitionLog，最多 100 筆 |
@@ -73,4 +74,3 @@
 - CSS
 - JavaScript
 - localStorage
-
