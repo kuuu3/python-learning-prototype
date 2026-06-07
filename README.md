@@ -82,5 +82,6 @@ index.html   # 頁面入口與 script 載入順序
 styles.css   # 介面樣式
 data.js      # 題庫、錯誤補救內容、自我說明概念規則
 storage.js   # localStorage、dirty flags、debounce、force flush
+timing.js    # 有效作答時間、分頁暫停、過快作答 helper
 app.js       # 學習流程、UI render、學生模型與事件處理
 ```
