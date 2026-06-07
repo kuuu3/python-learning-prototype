@@ -85,6 +85,7 @@ storage.js   # localStorage、dirty flags、debounce、force flush
 timing.js    # 有效作答時間、分頁暫停、過快作答 helper
 model.js     # 學生模型、進度分數、風險標籤與下一步建議
 assessment.js # 作答驗證、紀錄建立、錯誤標籤與自我說明偵測
+practice.js  # 診斷/練習流程、抽題、提示、重試與下一題
 views.js     # 學生端頁面 render、摘要、補救卡與學習路徑
 admin.js     # 管理頁、學習紀錄頁、展示資料、驗收檢查與 JSON 匯出
 app.js       # 初始化、流程切換、事件綁定與主 render 入口
