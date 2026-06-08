@@ -75,6 +75,14 @@
 - JavaScript
 - localStorage
 
+## 測試
+
+```bash
+node smoke-test.js
+```
+
+Smoke test 會用最小 DOM/localStorage 模擬載入所有 script，檢查首頁、管理頁、展示模式、總複習與主題練習入口是否能正常執行。
+
 ## 檔案結構
 
 ```text
@@ -90,4 +98,5 @@ practice.js  # 診斷/練習流程、抽題、提示、重試與下一題
 views.js     # 學生端頁面 render、摘要、補救卡與學習路徑
 admin.js     # 管理頁、學習紀錄頁、展示資料、驗收檢查與 JSON 匯出
 app.js       # 初始化、流程切換、事件綁定與主 render 入口
+smoke-test.js # 無套件 smoke test，檢查拆檔後核心流程可執行
 ```
