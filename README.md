@@ -81,6 +81,7 @@
 index.html   # 頁面入口與 script 載入順序
 styles.css   # 介面樣式
 data.js      # 題庫、錯誤補救內容、自我說明概念規則
+utils.js     # 時間格式、id 建立、HTML attribute escape 等共用工具
 storage.js   # localStorage、dirty flags、debounce、force flush
 timing.js    # 有效作答時間、分頁暫停、過快作答 helper
 model.js     # 學生模型、進度分數、風險標籤與下一步建議
